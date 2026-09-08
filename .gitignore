@@ -1,0 +1,46 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Logs and runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Node / Web dependencies & build
+node_modules/
+dist/
+build/
+.next/
+out/
+.cache/
+
+# Java / Kotlin / Gradle / Android
+.gradle/
+build/
+app/build/
+*.class
+*.jar
+*.war
+*.ear
+*.aar
+
+# Android Studio / IntelliJ / Eclipse / VSCode project files
+.idea/
+*.iml
+.vscode/
+local.properties
+.cxx/
+*.keystore
+*.jks
+.agents/mcp_config.json*
+.figma-images/

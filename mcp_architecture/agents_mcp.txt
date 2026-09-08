@@ -1,0 +1,19 @@
+Your IDE
+   │
+   ├── Filesystem MCP
+   │      └── Backend source code
+   │
+   ├── GitHub MCP
+   │      └── commits / PRs / issues
+   │
+   ├── PostgreSQL MCP
+   │      └── database schema + data
+   │
+   ├── Redis MCP
+   │      └── cache / sessions
+   │
+   ├── Docker MCP
+   │      └── containers / logs
+   │
+   └── Sentry MCP
+          └── production exceptions
