@@ -99,10 +99,11 @@ export class RealtimeGateway {
     return this.wss;
   }
 
-  private handleClientMessage(ws: AuthenticatedSocket, msg: { action: string; topic?: string }) {
+  private async handleClientMessage(ws: AuthenticatedSocket, msg: { action: string; topic?: string }): Promise<void> {
     if (msg.action === 'subscribe' && msg.topic) {
       // Authorization validation on topic subscription
-      if (this.canSubscribe(ws, msg.topic)) {
+      const allowed = await this.canSubscribe(ws, msg.topic);
+      if (allowed) {
         ws.subscriptions.add(msg.topic);
         ws.send(JSON.stringify({ event: 'SUBSCRIBED', topic: msg.topic }));
         logger.debug({ userId: ws.userId, topic: msg.topic }, 'Client subscribed to topic');
@@ -115,25 +116,46 @@ export class RealtimeGateway {
     }
   }
 
-  private canSubscribe(ws: AuthenticatedSocket, topic: string): boolean {
+  private async canSubscribe(ws: AuthenticatedSocket, topic: string): Promise<boolean> {
     if (ws.role === 'SUPER_ADMIN') return true;
 
-    // Tenant-level fleet topic: tenant:{id}:fleet
+    // 1. Tenant-level fleet topic: tenant:{id}:fleet
     if (topic.startsWith('tenant:')) {
       const parts = topic.split(':');
       const topicTenantId = parts[1];
       return ws.tenantId === topicTenantId;
     }
 
-    // Hospital radar topic: hospital:{id}:radar
+    // 2. Hospital radar topic: hospital:{id}:radar
     if (topic.startsWith('hospital:')) {
-      // Hospital admin or triage staff for this hospital, or dispatchers in same tenant
-      return true;
+      const hospitalId = topic.split(':')[1];
+      if (ws.hospitalId && ws.hospitalId === hospitalId) return true;
+      try {
+        const { pool } = await import('../database/index.js');
+        const hospRes = await pool.query('SELECT tenant_id FROM hospitals WHERE id = $1', [hospitalId]);
+        return hospRes.rows.length > 0 && hospRes.rows[0].tenant_id === ws.tenantId;
+      } catch (err) {
+        return false;
+      }
     }
 
-    // Mission telemetry topic: mission:{id}:telemetry
+    // 3. Mission telemetry topic: mission:{id}:telemetry
     if (topic.startsWith('mission:')) {
-      return true;
+      const missionId = topic.split(':')[1];
+      try {
+        const { pool } = await import('../database/index.js');
+        const mRes = await pool.query(
+          `SELECT m.tenant_id, h.tenant_id as dest_tenant_id 
+           FROM missions m 
+           JOIN hospitals h ON h.id = m.destination_hospital_id 
+           WHERE m.id = $1`,
+          [missionId]
+        );
+        if (mRes.rows.length === 0) return false;
+        return mRes.rows[0].tenant_id === ws.tenantId || mRes.rows[0].dest_tenant_id === ws.tenantId;
+      } catch (err) {
+        return false;
+      }
     }
 
     return false;

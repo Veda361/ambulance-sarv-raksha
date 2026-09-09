@@ -30,13 +30,16 @@ export class MissionService {
     const missionCode = this.generateMissionCode();
 
     return await withTransaction(async (client) => {
-      // 1. Verify ambulance belongs to tenant and is available or assigned
+      // 1. Verify ambulance belongs to tenant and is available with pessimistic row lock
       const ambRes = await client.query(
-        'SELECT id, status FROM ambulances WHERE id = $1 AND tenant_id = $2',
+        'SELECT id, status FROM ambulances WHERE id = $1 AND tenant_id = $2 FOR UPDATE',
         [input.ambulanceId, input.tenantId]
       );
       if (ambRes.rows.length === 0) {
         throw new NotFoundError(`Ambulance '${input.ambulanceId}' not found in this tenant`);
+      }
+      if (ambRes.rows[0].status !== 'AVAILABLE') {
+        throw new ConflictError(`Ambulance '${input.ambulanceId}' is not available for assignment (status: ${ambRes.rows[0].status})`);
       }
 
       // 2. Insert Mission record
@@ -300,17 +303,60 @@ export class MissionService {
     return mission;
   }
 
-  public static async listMissions(tenantId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
-    const res = await query(
-      `SELECT m.*, a.call_sign, h.name as hospital_name
-       FROM missions m
-       JOIN ambulances a ON a.id = m.ambulance_id
-       JOIN hospitals h ON h.id = m.destination_hospital_id
-       WHERE m.tenant_id = $1
-       ORDER BY m.created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [tenantId, limit, offset]
-    );
+  public static async listMissions(
+    tenantId: string,
+    limitOrOptions: number | { limit?: number; offset?: number; state?: string; triageAcuity?: string; hospitalId?: string } = 20,
+    maybeOffset: number = 0
+  ): Promise<any[]> {
+    let limit = 20;
+    let offset = 0;
+    let state: string | undefined;
+    let triageAcuity: string | undefined;
+    let hospitalId: string | undefined;
+
+    if (typeof limitOrOptions === 'object') {
+      limit = limitOrOptions.limit || 20;
+      offset = limitOrOptions.offset || 0;
+      state = limitOrOptions.state;
+      triageAcuity = limitOrOptions.triageAcuity;
+      hospitalId = limitOrOptions.hospitalId;
+    } else {
+      limit = limitOrOptions;
+      offset = maybeOffset;
+    }
+
+    let sql = `
+      SELECT m.*, 
+             a.call_sign as ambulance_call_sign, a.capability as ambulance_capability,
+             h.name as destination_hospital_name,
+             u.name as driver_name
+      FROM missions m
+      JOIN ambulances a ON a.id = m.ambulance_id
+      JOIN hospitals h ON h.id = m.destination_hospital_id
+      JOIN users u ON u.id = m.driver_id
+      WHERE (m.tenant_id = $1 OR m.destination_hospital_id IN (SELECT id FROM hospitals WHERE tenant_id = $1))
+    `;
+    const params: any[] = [tenantId];
+
+    if (state) {
+      params.push(state);
+      sql += ` AND m.state = $${params.length}`;
+    }
+
+    if (triageAcuity) {
+      params.push(triageAcuity);
+      sql += ` AND m.triage_acuity = $${params.length}`;
+    }
+
+    if (hospitalId) {
+      params.push(hospitalId);
+      sql += ` AND m.destination_hospital_id = $${params.length}`;
+    }
+
+    params.push(limit, offset);
+    sql += ` ORDER BY m.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+
+    const res = await query(sql, params);
     return res.rows;
   }
 }

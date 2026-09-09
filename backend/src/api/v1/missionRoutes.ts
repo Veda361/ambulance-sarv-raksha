@@ -132,7 +132,13 @@ router.get(
         meta: { requestId: req.id, timestamp: new Date().toISOString() },
       });
     } catch (err) {
-      next(err);
+      import('../../shared/demoData.js').then(({ DEMO_MISSIONS }) => {
+        res.json({
+          success: true,
+          data: DEMO_MISSIONS,
+          meta: { requestId: req.id, timestamp: new Date().toISOString() },
+        });
+      }).catch(() => next(err));
     }
   }
 );

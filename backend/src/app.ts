@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
+import { idempotencyMiddleware } from './middleware/idempotencyMiddleware.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiV1Routes } from './api/v1/index.js';
 import { pool } from './database/index.js';
@@ -16,6 +17,7 @@ export function createApp(): express.Express {
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
   app.use(requestIdMiddleware);
+  app.use(idempotencyMiddleware());
 
   // Request logger middleware
   app.use((req: Request, _res: Response, next) => {
