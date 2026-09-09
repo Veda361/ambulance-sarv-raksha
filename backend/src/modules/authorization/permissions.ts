@@ -19,11 +19,21 @@ export type Resource =
   | 'vital'
   | 'alert'
   | 'audit'
-  | 'device';
+  | 'device'
+  | 'receiving'
+  | 'user';
 
-export type Action = 'create' | 'read' | 'update' | 'delete' | 'assign' | 'transition';
+export type Action =
+  | 'create'
+  | 'read'
+  | 'update'
+  | 'delete'
+  | 'assign'
+  | 'transition'
+  | 'acknowledge'
+  | 'manage';
 
-// Permission Matrix matching Phase 0 specifications
+// Permission Matrix matching Phase 1 foundation + Phase 2 Hospital Operations specifications
 export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> = {
   SUPER_ADMIN: {
     organization: ['create', 'read', 'update', 'delete'],
@@ -35,6 +45,8 @@ export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     alert: ['read'],
     audit: ['read'],
     device: ['create', 'read', 'update', 'delete'],
+    user: ['create', 'read', 'update', 'delete'],
+    receiving: ['read'],
     // ZERO PHI: patient and vital are explicitly omitted
   },
 
@@ -43,27 +55,31 @@ export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     hospital: ['create', 'read', 'update', 'delete'],
     ambulance: ['create', 'read', 'update', 'delete'],
     crew: ['create', 'read', 'update', 'delete'],
-    mission: ['create', 'read', 'update', 'delete'],
+    mission: ['create', 'read', 'update', 'delete', 'assign', 'transition'],
     patient: ['create', 'read', 'update'],
     location: ['read'],
     vital: ['read'],
-    alert: ['read', 'update'],
+    alert: ['create', 'read', 'update', 'acknowledge'],
     audit: ['read'],
     device: ['create', 'read', 'update', 'delete'],
+    user: ['create', 'read', 'update', 'delete'],
+    receiving: ['read', 'manage'],
   },
 
   HOSPITAL_ADMIN: {
     organization: ['read'],
     hospital: ['read', 'update'],
-    ambulance: ['read'],
-    crew: ['read'],
-    mission: ['create', 'read', 'update'],
+    ambulance: ['create', 'read', 'update'], // Phase 2: Hospital Admin manages facility ambulance fleet
+    crew: ['create', 'read', 'update'],     // Phase 2: Hospital Admin manages crew shifts
+    mission: ['create', 'read', 'update', 'assign', 'transition'],
     patient: ['create', 'read', 'update'],
     location: ['read'],
     vital: ['read'],
-    alert: ['read', 'update'],
+    alert: ['read', 'update', 'acknowledge'],
     audit: ['read'],
     device: ['read'],
+    user: ['create', 'read', 'update'],     // Phase 2: Hospital Admin manages hospital staff
+    receiving: ['read', 'manage'],
   },
 
   DISPATCHER: {
@@ -75,8 +91,9 @@ export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     patient: ['create', 'read', 'update'],
     location: ['read'],
     vital: ['read'],
-    alert: ['create', 'read', 'update'],
+    alert: ['create', 'read', 'update', 'acknowledge'],
     device: ['read'],
+    receiving: ['read', 'manage'],
   },
 
   DRIVER: {
@@ -97,7 +114,8 @@ export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     patient: ['create', 'read', 'update'],
     vital: ['create', 'read', 'update'],
     location: ['read'],
-    alert: ['create', 'read'],
+    alert: ['create', 'read', 'acknowledge'],
+    receiving: ['read'],
   },
 
   RECEIVING_HOSPITAL_USER: {
@@ -107,7 +125,8 @@ export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     patient: ['read'],
     vital: ['read'],
     location: ['read'],
-    alert: ['read', 'update'],
+    alert: ['read', 'update', 'acknowledge'],
+    receiving: ['read', 'manage'],
   },
 
   GOVERNMENT_OPERATOR: {
@@ -118,6 +137,7 @@ export const PERMISSIONS: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     location: ['read'],
     alert: ['read'],
     audit: ['read'],
+    receiving: ['read'],
     // ZERO PHI: patient and vitals omitted
   },
 };
