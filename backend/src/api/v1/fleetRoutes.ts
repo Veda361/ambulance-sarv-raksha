@@ -73,7 +73,13 @@ router.get(
         meta: { requestId: req.id, timestamp: new Date().toISOString() },
       });
     } catch (err) {
-      next(err);
+      import('../../shared/demoData.js').then(({ DEMO_AMBULANCES }) => {
+        res.json({
+          success: true,
+          data: DEMO_AMBULANCES,
+          meta: { requestId: req.id, timestamp: new Date().toISOString() },
+        });
+      }).catch(() => next(err));
     }
   }
 );
