@@ -1,0 +1,40 @@
+# Phase Status Matrix
+
+**Audit Date:** 2026-09-08  
+**Evidence Standard:** Actual source code, tests, and configuration verified against repository
+
+---
+
+| Phase | Name | Status | Implementation Evidence | Test Evidence | Documentation | Production Readiness | Blockers | Next Action |
+|-------|------|--------|------------------------|---------------|---------------|---------------------|----------|-------------|
+| 0 | Product & Architecture Charter | COMPLETE | N/A (documentation phase) | N/A | 68 documents across 8 directories; 18 ADRs; quality gate passed | N/A | None | Frozen |
+| 1 | Production Engineering Foundation | IMPLEMENTED_NOT_PRODUCTION_READY | 31 TS source files; 444-line SQL schema; 10 domain modules; 5 API route groups; WebSocket gateway; migration system | 4 test files (3 unit + 1 integration, 477-line E2E suite) | 16 Phase 1 design documents | DEVELOPMENT READY — No CI/CD, no Docker, secrets in .env, no RLS verification in app layer, CORS=* | JWT secret hard-coded in `.env` | Security hardening, CI/CD setup |
+| 2 | Hospital Operations Dashboard | NOT_STARTED | `web/` contains only `.gitkeep` | None | Planned in architecture docs | N/A | Phase 1 not production-ready | Create React/Vite project |
+| 3 | Ambulance Driver & EMT Android App | NOT_STARTED | Android scaffold only — `MainActivity.kt` shows "Hello Android" | Example test scaffolds only | ADR-007 defines strategy | N/A | Phase 1 backend not production-ready | Implement login, mission list, transitions |
+| 4 | GPS / Location Tracking | PARTIAL | `LocationService.ts` records GPS, calculates ETA via earthdistance; `locationSchema` validates coords | GPS telemetry tested in E2E suite (test 10) | Architecture defined | DEVELOPMENT READY — backend location ingestion works; no mobile GPS, no map display | No mobile GPS integration | Android GPS, map rendering |
+| 5 | Mission Dispatch & Operational Workflow | PARTIAL | Full 13-state FSM; `MissionService` with create/transition/list/get; automatic REQUESTED→ASSIGNED; cross-tenant hospital envelope | FSM unit tests (6 cases); E2E lifecycle tests (tests 7-12) | Comprehensive FSM specification | DEVELOPMENT READY — core FSM works, no dispatch algorithm, no auto-assignment | No dispatch optimization | Dispatch UI, auto-assignment |
+| 6 | Patient Management & Clinical Data Foundation | PARTIAL | `PatientService` CRUD; `ClinicalService` with NEWS2 scoring; alert generation on critical vitals | NEWS2 unit tests (3 cases); E2E clinical tests (test 11) | Domain model documented | DEVELOPMENT READY — create/read patient; vitals recording; no update/search | No patient search, no update flows | Patient search, update, history |
+| 7 | IoT / Hardware Integration | PARTIAL | `DeviceService` register/authenticate; API-key based device auth; telemetry ingestion endpoint | Device telemetry tested via E2E | ADR-006, IoT boundary doc | DEVELOPMENT READY — no firmware, no real sensors, software-only API boundary | No firmware, no physical hardware | ESP32/STM32 firmware |
+| 8 | Realtime Coordination | PARTIAL | `RealtimeGateway` WebSocket server; JWT-authenticated upgrade; topic subscription; tenant-scoped broadcast; heartbeat/liveness | Not directly tested in test suite | ADR-005, realtime foundation doc | DEVELOPMENT READY — single-process only, no horizontal scaling | No Redis pub/sub for scaling | Add Redis adapter, reconnection logic |
+| 9 | Hospital Pre-Arrival & Receiving Hospital Coordination | PARTIAL | Hospital radar broadcast on mission state changes; cross-tenant mission visibility for destination hospital | Multi-tenant isolation tested (test 13) | Architecture documented | DEVELOPMENT READY — broadcast-only, no receiving hospital UI | No web dashboard | Build receiving hospital UI |
+| 10 | Notifications & Communication | NOT_STARTED | No push notification, SMS, email, or in-app notification implementation | None | Planned | N/A | No notification provider configured | Choose and integrate notification provider |
+| 11 | Offline-First Mobile Reliability | NOT_STARTED | No offline queue, no local storage, no sync mechanism in Android | None | ADR-007 strategy defined | N/A | Android app not implemented | Implement Room DB, offline queue |
+| 12 | Fleet Management | PARTIAL | `FleetService` with ambulance CRUD, status management, nearest-ambulance spatial query, crew shifts | Fleet tested in E2E (tests 4-5) | Domain model | DEVELOPMENT READY — basic fleet ops, no maintenance scheduling | No maintenance, no analytics | Fleet analytics, maintenance scheduling |
+| 13 | Advanced Dispatch & Ambulance Coordination | NOT_STARTED | No advanced dispatch algorithm, no load balancing, no capability matching beyond basic | None | Planned | N/A | Basic dispatch only | Implement dispatch algorithm |
+| 14 | Government / EMS Command Center | NOT_STARTED | GOVERNMENT_OPERATOR role defined in RBAC but no dedicated UI or API | None | Persona defined | N/A | No web dashboard | Build government dashboard |
+| 15 | Analytics & Reporting | NOT_STARTED | No analytics implementation | None | Planned | N/A | Insufficient data collection | Implement reporting engine |
+| 16 | Subscription / SaaS / Feature Entitlements | NOT_STARTED | No subscription, billing, or feature gating implementation | None | Business model documented | N/A | Core platform not complete | Implement billing module |
+| 17 | External API & Integrations | NOT_STARTED | No external API gateway or third-party integrations | None | Planned | N/A | Core APIs not stabilized | API versioning, documentation |
+| 18 | Device Management | PARTIAL | Device registration and API-key authentication implemented | None specifically | IoT boundary documented | DEVELOPMENT READY — register/auth only, no OTA, no monitoring | No OTA updates, no device monitoring | Device dashboard, OTA |
+| 19 | Security Hardening | NOT_STARTED | Basic auth and RBAC exist but no rate limiting, no security headers, no HTTPS enforcement, no penetration testing | None | Security baseline and threat model documented | N/A | Multiple security gaps | Implement rate limiting, security headers |
+| 20 | Reliability / Disaster Recovery | NOT_STARTED | No backup, no DR, no failover | None | Planned | N/A | No infrastructure | Implement backup strategy |
+| 21 | Observability / SRE | PARTIAL | `/health`, `/ready`, `/metrics` endpoints; Pino structured logging with PHI redaction | Health endpoints tested (test 18) | ADR-P1-010 | DEVELOPMENT READY — no Prometheus, no Grafana, no alerting | No monitoring stack | Deploy monitoring stack |
+| 22 | Performance & Scalability | NOT_STARTED | No load testing, no caching, no connection pooling tuning | None | NFRs defined | N/A | No infrastructure | Load testing, performance optimization |
+| 23 | Comprehensive Testing & QA | PARTIAL | 4 test files; 3 unit + 1 integration; 18 test cases total | Tests exist but coverage gaps | Testing strategy documented | DEVELOPMENT READY — critical paths covered, many gaps | Missing tenant isolation tests at DB level | Expand test coverage |
+| 24 | Production Infrastructure & Deployment | NOT_STARTED | No Docker, no CI/CD, no IaC, no deployment scripts | None | Planned | N/A | Nothing deployable | Create Dockerfile, CI/CD pipeline |
+| 25 | Compliance / Privacy / Legal Readiness | NOT_STARTED | PHI redaction in logs exists; no consent management, no data retention policies | None | Privacy requirements documented | N/A | No compliance framework | Implement consent, data retention |
+| 26 | Pilot Deployment | NOT_STARTED | No pilot environment | None | None | N/A | Everything above | Complete Phase 2, 3, security |
+| 27 | Production Launch Readiness | NOT_STARTED | No launch checklist, no runbooks | None | None | N/A | Everything above | Create launch checklist |
+| 28 | Production Launch | NOT_STARTED | No production deployment | None | None | N/A | Everything above | Complete all prerequisites |
+| 29 | Post-Launch Optimization | NOT_APPLICABLE | Pre-launch | None | None | N/A | Pre-launch | N/A |
+| 30 | Scale / Multi-Region / Enterprise Evolution | NOT_APPLICABLE | Pre-launch | None | None | N/A | Pre-launch | N/A |
